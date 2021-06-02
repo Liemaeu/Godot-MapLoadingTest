@@ -2,14 +2,9 @@ extends Node
 
 var tiles_loaded = []
 var tiles_existing = []
-var tiles_should_loaded = []
 var tile_size = 20
-var thread_loading
-var thread_unloading
-var thread_loading_lock = false
-var thread_unloading_lock = false
-var timer_loading = Timer.new()
-var timer_unloading = Timer.new()
+var player_pos
+var thread_lock = false
 
 
 func _ready():
@@ -17,35 +12,17 @@ func _ready():
 	check_existing_tiles()
 	#adds startup tile
 	load_startup_tiles(2, 2)
-	#sets up the loading timer
-	timer_loading.connect("timeout", self, "_on_timer_loading_timeout")
-	timer_loading.wait_time = 0.1
-	add_child(timer_loading)
-	timer_loading.start()
-	#sets up the unloading timer
-	timer_unloading.connect("timeout", self, "_on_timer_unloading_timeout")
-	timer_unloading.wait_time = 0.1
-	add_child(timer_unloading)
-	timer_unloading.start()
+	#adds player x and z tile position
+	player_pos = [get_tile_x(), get_tile_z()]
 
 
 func _physics_process(delta):
-	check_tiles()
-
-
-
-func _on_timer_loading_timeout():
-	if thread_loading_lock == false:
-		thread_loading_lock = true
-		thread_loading = Thread.new()
-		thread_loading.start(self, "load_existing_tiles", null, 0)
-
-
-func _on_timer_unloading_timeout():
-	if thread_unloading_lock == false:
-		thread_unloading_lock = true
-		thread_unloading = Thread.new()
-		thread_unloading.start(self, "unload_unexisting_tiles", null, 0)
+	if player_pos[0] != get_tile_x() or player_pos[1] != get_tile_z():
+		if thread_lock == false:
+			thread_lock = true
+			player_pos = [get_tile_x(), get_tile_z()]
+			var thread = Thread.new()
+			thread.start(self, "check_tiles", player_pos, 0)
 
 
 #function to check for existing tiles
@@ -86,33 +63,6 @@ func load_tile(x, z):
 		add_child(tile_load_temp)
 	tiles_loaded.append(tile_temp)
 
-#function to load all tiles that aren't loaded but should be
-func load_existing_tiles(arg):
-	var children = []
-	for i in get_children():
-		children.append(i.name)
-	for i in tiles_loaded:
-		if not children.has(i):
-			var tile_temp = load("res://Map/Tiles/" + i + ".tscn").instance()
-			var tilexz = i.split("Z", true, 1)
-			var x = tilexz[0]
-			x.erase(0, 1)
-			var z = tilexz[1]
-			var x_offset = tile_size / 2 + (int(x) - 1) * tile_size
-			var z_offset = tile_size / 2 + (int(z) - 1) * tile_size
-			tile_temp.global_translate(Vector3(x_offset, 0, z_offset))
-			add_child(tile_temp)
-	thread_loading_lock = false
-
-
-#function to unload all no longer in tiles_loaded existing tiles
-func unload_unexisting_tiles(arg):
-	for i in get_children():
-		if tiles_existing.has(i.name):
-			if not tiles_loaded.has(i.name):
-				get_node(i.name).queue_free()
-	thread_unloading_lock = false
-
 
 #function to get tile x position of player
 func get_tile_x():
@@ -137,33 +87,44 @@ func get_tile_z():
 
 
 #function to load and unload tiles
-func check_tiles():
+func check_tiles(player_pos):
 	var tile_temp
 	#adds tiles that should be loaded to tiles_should_loaded
-	tiles_should_loaded.clear()
-	tile_temp = "X" + str(get_tile_x() - 1) + "Z" + str(get_tile_z() - 1)
+	var tiles_should_loaded = []
+	tile_temp = "X" + str(player_pos[0] - 1) + "Z" + str(player_pos[1] - 1)
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x() - 1) + "Z" + str(get_tile_z())
+	tile_temp = "X" + str(player_pos[0] - 1) + "Z" + str(player_pos[1])
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x() - 1) + "Z" + str(get_tile_z() + 1)
+	tile_temp = "X" + str(player_pos[0] - 1) + "Z" + str(player_pos[1] + 1)
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x()) + "Z" + str(get_tile_z() - 1)
+	tile_temp = "X" + str(player_pos[0]) + "Z" + str(player_pos[1] - 1)
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x()) + "Z" + str(get_tile_z())
+	tile_temp = "X" + str(player_pos[0]) + "Z" + str(player_pos[1])
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x()) + "Z" + str(get_tile_z() + 1)
+	tile_temp = "X" + str(player_pos[0]) + "Z" + str(player_pos[1] + 1)
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x() + 1) + "Z" + str(get_tile_z() - 1)
+	tile_temp = "X" + str(player_pos[0] + 1) + "Z" + str(player_pos[1] - 1)
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x() + 1) + "Z" + str(get_tile_z())
+	tile_temp = "X" + str(player_pos[0] + 1) + "Z" + str(player_pos[1])
 	tiles_should_loaded.append(tile_temp)
-	tile_temp = "X" + str(get_tile_x() + 1) + "Z" + str(get_tile_z() + 1)
+	tile_temp = "X" + str(player_pos[0] + 1) + "Z" + str(player_pos[1] + 1)
 	tiles_should_loaded.append(tile_temp)
-	#removes all tiles that should no longer be loaded from tiles_loaded
+	#removes all tiles that should no longer be loaded
 	for i in tiles_loaded:
 		if not tiles_should_loaded.has(i):
 			tiles_loaded.erase(i)
-	#adds all tiles that should be loaded to tiles_loaded
+			get_node(i).queue_free()
+	#adds all tiles that should be loaded
 	for i in tiles_should_loaded:
-		if not tiles_loaded.has(i):
+		if not tiles_loaded.has(i) and tiles_existing.has(i):
 			tiles_loaded.append(i)
+			tile_temp = load("res://Map/Tiles/" + i + ".tscn").instance()
+			var tilexz = i.split("Z", true, 1)
+			var x = tilexz[0]
+			x.erase(0, 1)
+			var z = tilexz[1]
+			var x_offset = tile_size / 2 + (int(x) - 1) * tile_size
+			var z_offset = tile_size / 2 + (int(z) - 1) * tile_size
+			tile_temp.global_translate(Vector3(x_offset, 0, z_offset))
+			add_child(tile_temp)
+	thread_lock = false

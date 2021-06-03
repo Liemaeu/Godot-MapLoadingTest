@@ -10,10 +10,11 @@ var thread_lock = false
 func _ready():
 	#adds tiles to tiles_existing
 	check_existing_tiles()
-	#adds startup tile
-	load_startup_tiles(2, 2)
 	#adds player x and z tile position
 	player_pos = [get_tile_x(), get_tile_z()]
+	#adds startup tile
+	load_startup_tiles(2, 2)
+
 
 
 func _physics_process(delta):
@@ -110,10 +111,13 @@ func check_tiles(player_pos):
 	tile_temp = "X" + str(player_pos[0] + 1) + "Z" + str(player_pos[1] + 1)
 	tiles_should_loaded.append(tile_temp)
 	#removes all tiles that should no longer be loaded
+	var tiles_loaded_temp = []
 	for i in tiles_loaded:
 		if not tiles_should_loaded.has(i):
-			tiles_loaded.erase(i)
+			tiles_loaded_temp.append(i)
 			get_node(i).queue_free()
+	for i in tiles_loaded_temp:
+		tiles_loaded.erase(i)
 	#adds all tiles that should be loaded
 	for i in tiles_should_loaded:
 		if not tiles_loaded.has(i) and tiles_existing.has(i):

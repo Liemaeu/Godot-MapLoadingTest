@@ -10,7 +10,7 @@ It loads the tile the player is standing on and the 8 tiles around it. If the pl
 
 All happens in the background by using threads, so the game will not freeze while loading new parts of the map.
 
-It only works in 2D since a usual game map is not particularly high, but it could be extended to 3D. It depends on your game if it's needed or not.
+It only works in two dimensions (x and z) since a usual game map is not particularly high, but it could be extended to three dimensions (x, y and z). It depends on your game if it's needed or not.
 
 ## How to use
 

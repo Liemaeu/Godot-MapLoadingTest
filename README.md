@@ -2,6 +2,8 @@
 
 This is a test project which allows you to load a big map (e.g. of an open world game) part by part with the [Godot Engine](https://godotengine.org/). It is designed for 3D games.
 
+**Please keep in mind this is just a test project I did for fun, not a professional guide how to do it the perfect way.***
+
 ## What it does
 
 You can decrease the loading time of your game by not loading the whole map at the beginning.
